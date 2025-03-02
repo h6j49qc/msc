@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 import time
+import matplotlib.ticker as mticker
 
 # Define reaction rate constants (assumed reasonable values)
 # wild type; equilibrium 54% Active
@@ -108,18 +109,19 @@ def drawPlot(sol, use_log_scale, txt):
     ax1.set_ylabel("Concentration (M)")
     ax1.plot(t, BcrAbl_active, label="[Bcr-Abl (Active)]", color="red")
     ax1.plot(t, BcrAbl_inactive, label="[Bcr-Abl (Inactive)]", color="blue")
-    ax1.plot(t, BcrAbl_ATP, label="dBcrAbl_ATP")
+#    ax1.plot(t, BcrAbl_ATP, label="dBcrAbl_ATP")
     ax1.plot(t, Imatinib, label="Imatinib")
     ax1.plot(t, BcrAbl_Imatinib, label="BcrAbl_Imatinib")
-    ax1.plot(t, Substrate, label="Substrate")
-    ax1.plot(t, BcrAbl_Substrate, label="BcrAbl_Substrate")
-    ax1.plot(t, Phospho_Substrate, label="Phospho_Substrate")
+#    ax1.plot(t, Substrate, label="Substrate")
+#    ax1.plot(t, BcrAbl_Substrate, label="BcrAbl_Substrate")
+#    ax1.plot(t, Phospho_Substrate, label="Phospho_Substrate")
     ax1.legend(loc='lower center')
 
     # 2nd y-axis and curves
     ax2.set_ylabel("Proportion Active Bcr-Abl", color='green')
     ax2.plot(t, actRatio, label="Active/Inactive Ratio", color="green", linestyle='dashed', lw=1)
     ax2.legend(loc='upper right')
+    ax2.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x * 100:.0f}%'))
 
 #    plt.title("Kinetic Simulation of BCR-ABL Dynamics ("+txt+"K+1=%5.2f K-1=%5.2f)" % (k_plus1, k_minus1))
     plt.title(txt)
@@ -135,7 +137,7 @@ algo=5
 # a few global variables
 iter=0
 use_log_scale=1
-debug=1
+debug=0
 
 # Time span for simulation (0 to 100s)
 t_end=50
@@ -146,10 +148,38 @@ t_eval = np.linspace(0, t_end, 500)
 y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
 
 while algo<len(algorithms):
+
+    k_plus1 = 0.1  # Activation rate of BCR-ABL (s⁻¹)
+    k_minus1 = 0.0851  # Inactivation rate of BCR-ABL (s⁻¹)
+    iter = 0
+    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
+    drawPlot(sol, use_log_scale, "Wild")
+
+    k_plus1 = 0.1  # Activation rate of BCR-ABL (s⁻¹)
+    k_minus1 = 0.014  # Inactivation rate of BCR-ABL (s⁻¹)
     iter = 0
     sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end/2000)
-    drawPlot(sol, use_log_scale, "Algorithm="+algorithms[algo])
-    drawPlot(sol, 0, "Algorithm="+algorithms[algo])
+    drawPlot(sol, use_log_scale, "Mutant")
+    '''
+    Imatinib_0 = 2e-6  # 1 μM
+    y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
+    iter = 0
+    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end/2000)
+    drawPlot(sol, use_log_scale, "Mutant; Imatinibx2")
+
+    Imatinib_0 = 3e-6  # 1 μM
+    y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
+    iter = 0
+    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end/2000)
+    drawPlot(sol, use_log_scale, "Mutant; Imatinibx3")
+    '''
+    Imatinib_0 = 4e-6  # 1 μM
+    y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
+    iter = 0
+    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end/2000)
+    drawPlot(sol, use_log_scale, "Mutant; Imatinibx4")
+
+    # drawPlot(sol, 0, "Algorithm="+algorithms[algo])
     algo+=1
 
 plt.show()
