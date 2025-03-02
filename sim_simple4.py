@@ -4,8 +4,14 @@ from scipy.integrate import solve_ivp
 import time
 
 # Define reaction rate constants (assumed reasonable values)
+# wild type; equilibrium 54% Active
 k_plus1 = 0.1  # Activation rate of BCR-ABL (s⁻¹)
-k_minus1 = 0.06  # Inactivation rate of BCR-ABL (s⁻¹)
+k_minus1 = 0.0851  # Inactivation rate of BCR-ABL (s⁻¹)
+
+# Mutant type, equilibrium >54%
+k_plus1 = 0.1  # Activation rate of BCR-ABL (s⁻¹)
+k_minus1 = 0.04  # Inactivation rate of BCR-ABL (s⁻¹)
+
 k_on1 = 1e2  # ATP binding rate (M⁻¹s⁻¹)
 k_off1 = 0.1  # ATP unbinding rate (s⁻¹)
 k_on3 = 1e2  # Imatinib binding rate (M⁻¹s⁻¹)
@@ -15,7 +21,8 @@ Kintake = 3e-10 # Imatinib intake Ms⁻¹ (dosage 600mg or approx. 1.2 millimole
 k_on2 = 1.0e6  # Substrate binding rate (M⁻¹s⁻¹)
 k_off2 = 0.1  # Substrate unbinding rate (s⁻¹)
 k_cat = 0.5  # Catalytic phosphorylation rate (s⁻¹)
-
+k_prod1 = 1e-8
+k_deg = 1e-1
 
 # Initial concentrations (M)
 BcrAbl_active_0 = 5e-6  # 5 μM
@@ -37,12 +44,12 @@ def bcr_abl_kinetics(t, y):
     BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = y
 
     dBcrAbl_active = k_plus1 * BcrAbl_inactive - k_minus1 * BcrAbl_active - k_on1 * ATP_0 * BcrAbl_active + k_off1*BcrAbl_ATP
-    dBcrAbl_inactive = k_minus1 * BcrAbl_active - k_plus1 * BcrAbl_inactive - k_on3 * BcrAbl_inactive * Imatinib
+    dBcrAbl_inactive = k_minus1 * BcrAbl_active - k_plus1 * BcrAbl_inactive - k_on3 * BcrAbl_inactive * Imatinib + k_prod1
 
     dBcrAbl_ATP = k_on1 * BcrAbl_active * ATP_0 - k_off1 * BcrAbl_ATP + k_off2 * BcrAbl_Substrate
 
     dImatinib = Kintake - k_on3 * Imatinib * BcrAbl_inactive + k_off3 * BcrAbl_Imatinib
-    dBcrAbl_Imatinib = k_on3 * BcrAbl_inactive * Imatinib - k_off3 * BcrAbl_Imatinib
+    dBcrAbl_Imatinib = k_on3 * BcrAbl_inactive * Imatinib - k_off3 * BcrAbl_Imatinib - k_deg * BcrAbl_Imatinib
 
     dSubstrate =  k_off2 * BcrAbl_Substrate - k_on2 * Substrate * dBcrAbl_ATP
     # try treating this as a constant as we have no replenishment process
