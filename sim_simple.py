@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy.ma.core import maximum
 from scipy.integrate import solve_ivp
+import matplotlib.ticker as mticker
 
 # Define reaction rate constants (assumed reasonable values)
 k_plus1 = 0.10  # Activation rate of BCR-ABL (s⁻¹)
@@ -44,11 +45,13 @@ print(actRatio)
 fig, ax1 = plt.subplots(figsize=(10, 6))
 plt.grid(axis='x')
 ax2 = ax1.twinx()
+ax2.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x * 100:.0f}%'))
 
 # set limits
 ax1.set_xlim(0, t.max())
 ax1.set_ylim(0, max(BcrAbl_active.max(), BcrAbl_inactive.max()))
 ax2.set_ylim(0,1)
+ax2.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x * 100:.0f}%'))
 
 # 1st y-axis and curves
 ax1.set_ylabel("Concentration (M)")
@@ -60,8 +63,9 @@ ax1.set_xlabel("Time (s)")
 # 2nd y-axis and curves
 ax2.set_ylabel("Proportion Active Bcr-Abl", color='green')
 ax2.plot(t, actRatio, label="Active/Inactive Ratio", color="green", linestyle='dashed', lw=1)
-ax2.legend(loc='upper right')
+ax2.legend(loc='center right')
 
-plt.title("Kinetic Simulation of BCR-ABL Dynamics K+1=%5.2f K-1=%5.2f" % (k_plus1, k_minus1))
+plt.title("Kinetic Simulation of BCR-ABL Dynamics K+1=%6.4fs⁻¹ K-1=%6.4fs⁻¹" % (k_plus1, k_minus1))
 plt.grid()
+plt.draw()
 plt.show()

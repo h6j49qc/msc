@@ -39,6 +39,7 @@ Phospho_Substrate_0 = 0  # Initially no phosphorylated substrate
 # Define ODE system
 def bcr_abl_kinetics(t, y):
 
+    # need to declare iter as global because we change it here, so python otherwise assumes it is local
     global iter
     BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = y
 
