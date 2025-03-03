@@ -97,7 +97,10 @@ def drawPlot(xValues, y1Values, y1Labels, y2Values, y2Labels, title):
     i=0
     for y1 in y1Values:
         print(y1Labels[i])
-        ax1.plot(t, y1, label=y1Labels[i])
+        if (i==0):
+            ax1.plot(t, y1, label=y1Labels[i], linestyle='dotted')
+        else:
+            ax1.plot(t, y1, label=y1Labels[i], linestyle='solid', lw=1)
         i+=1
     ax1.legend(loc='lower center')
 
@@ -109,7 +112,7 @@ def drawPlot(xValues, y1Values, y1Labels, y2Values, y2Labels, title):
         ax2.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x * 100:.0f}%'))
         i=0
         for y2 in y2Values:
-            ax2.plot(t, y2, label=y2Labels[i], color="green", linestyle='dashed', lw=1)
+            ax2.plot(t, y2, label=y2Labels[i], linestyle='dashed', lw=1)
             i+=1
         ax2.legend(loc='upper right')
 
@@ -131,7 +134,7 @@ use_log_scale=1
 debug=0
 
 # Time span for simulation (0 to 100s)
-t_end=100
+t_end=80
 t_span = (0, t_end)
 t_eval = np.linspace(0, t_end, 500)
 
@@ -154,7 +157,7 @@ BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate
 y1Values.append(BcrAbl_Imatinib)
 y1Labels.append("Wild BcrAbl (Imatinib = %iμM)" % (Imatinib_0*1e6))
 y2Values.append(BcrAbl_active / (BcrAbl_active + BcrAbl_inactive))
-y2Labels.append("Wild BcrAbl, [BcrAbl_active]")
+y2Labels.append("Wild BcrAbl, proportion [BcrAbl_active]")
 
 k_plus1 = 0.1  # Activation rate of BCR-ABL (s⁻¹)
 k_minus1 = 0.014  # Inactivation rate of BCR-ABL (s⁻¹)
@@ -168,7 +171,7 @@ for Imatinib_0 in [1e-6, 2e-6, 3e-6, 4e-6, 5e-6]:
     y1Labels.append("Mutant BcrAbl (Imatinib = %iμM)" % (Imatinib_0*1e6))
     if len(y2Values)<2:
         y2Values.append(BcrAbl_active/(BcrAbl_active+BcrAbl_inactive))
-        y2Labels.append("Wild BcrAbl, [BcrAbl_active]")
+        y2Labels.append("Mutant BcrAbl, proportion [BcrAbl_active]")
 
 drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "[BcrAbl_Imatinib] by Dosage, Time Dependemcy")
 
