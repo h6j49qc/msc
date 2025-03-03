@@ -5,7 +5,7 @@ from scipy.integrate import solve_ivp
 
 # Define reaction rate constants (assumed reasonable values)
 k_plus1 = 0.10  # Activation rate of BCR-ABL (s⁻¹)
-k_minus1 = 0.06  # Inactivation rate of BCR-ABL (s⁻¹)
+k_minus1 = 0.0851  # Inactivation rate of BCR-ABL (s⁻¹)
 k_prod1 = 5.0e-7
 k_prod1 = 0
 
