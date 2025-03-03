@@ -307,6 +307,7 @@ drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Apoptosis Rate", False)
 # Title: Adjustment of Imantinib Concentration in Mutant
 # ======================================================================
 
+y1Values, y1Labels, y2Values, y2Labels = ([], [], [], [])
 k_plus1 = 0.1  # Activation rate of BCR-ABL (s⁻¹)
 k_minus1 = 0.0851  # Inactivation rate of BCR-ABL (s⁻¹)
 Imatinib_0 = 1e-6  # 1 μM
