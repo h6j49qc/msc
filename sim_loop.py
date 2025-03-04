@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 import matplotlib.ticker as mticker
+from datetime import datetime
 
 # Define reaction rate constants (assumed reasonable values)
 k_on1 = 1e2  # ATP binding rate (M⁻¹s⁻¹)
@@ -67,7 +68,7 @@ def bcr_abl_kinetics(t, y):
     iter+=1
     return [dBcrAbl_active, dBcrAbl_inactive, dBcrAbl_ATP, dImatinib, dBcrAbl_Imatinib, dSubstrate, dBcrAbl_Substrate, dPhospho_Substrate]
 
-def drawPlot(xValues, y1Values, y1Labels, y2Values, y2Labels, title, y1LogScale=False, y1LegendPosition="lower center"):
+def drawPlot(xValues, y1Values, y1Labels, y2Values, y2Labels, title, y1LogScale=False, y1LegendPosition="lower center", fname=""):
 
     # determine minima and maxima for scaling
     minY1, maxY1, minY2, maxY2 = 1e20, 0.0, 1e20, 0.0
@@ -121,6 +122,10 @@ def drawPlot(xValues, y1Values, y1Labels, y2Values, y2Labels, title, y1LogScale=
     plt.grid()
     plt.grid(axis='x')
 
+    if len(fname)>0:
+        fig.savefig(fname, format="png", dpi=300)  # dpi=300 for higher quality
+
+
 # ======================================
 # Main Graph Generation code starts here
 # ======================================
@@ -128,6 +133,9 @@ def drawPlot(xValues, y1Values, y1Labels, y2Values, y2Labels, title, y1LogScale=
 # unless max_step is reduced from default. See below for documentation
 algorithms=["RK45","RK23","DOP853","Radau","BDF","LSODA"]
 algo=5
+
+# Get current date and time
+timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 # a few global variables
 iter=0
@@ -158,7 +166,7 @@ y1Values.append(BcrAbl_active)
 y1Values.append(BcrAbl_inactive)
 y1Labels=["[BcrAbl_active] (Wild)", "[BcrAbl_inactive] (Wild)"]
 y2Labels=["Proportion Active BcrAbl (Wild)"]
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Free BCR-ABL Equilibrium WT", use_log_scale)
+drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Figure 1a: Free BCR-ABL Equilibrium WT", use_log_scale, fname="fig_1a_%s.png"%timestamp)
 
 y1Values, y1Labels, y2Values, y2Labels = ([], [], [], [])
 k_minus1= 0.014
@@ -172,7 +180,7 @@ y1Values.append(BcrAbl_active)
 y1Values.append(BcrAbl_inactive)
 y1Labels=["[BcrAbl_active] (Mutant)", "[BcrAbl_inactive] (Mutant)"]
 y2Labels=["Proportion Active BcrAbl (Mutant)"]
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Free BCR-ABL Equilibrium Mutant", use_log_scale)
+drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Figure 1b: Free BCR-ABL Equilibrium Mutant", use_log_scale, fname="fig_1b_%s.png"%timestamp)
 
 # ======================================================================
 # GRAPH 2
@@ -186,8 +194,10 @@ for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
     iter = 0
     y1Values, y1Labels, y2Values, y2Labels = ([], [], [], [])
     type="WT"
+    fig = "2a"
     if loop>0:
         type="Mutant"
+        fig="2b"
     y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
     sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
     t = sol.t
@@ -205,7 +215,7 @@ for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
     y1Labels=["[BcrAbl_active]", "[BcrAbl_inactive]", "[BcrAbl_ATP]", "[Imatinib]", "[BcrAbl_Imatinib]",
               "[Substrate]", "[BcrAbl_Substrate]","[Phospho_Substrate]"]
     y2Labels=["Proportion Active BcrAbl"]
-    drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Time evolution of All Model Components %s"%type, use_log_scale)
+    drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Figure %s: Time evolution of All Model Components %s (linear)"%(fig, type), use_log_scale, fname="fig_%s_%s.png"%(fig, timestamp))
     loop+=1
 
 use_log_scale=True
@@ -214,8 +224,10 @@ for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
     iter = 0
     y1Values, y1Labels, y2Values, y2Labels = ([], [], [], [])
     type="WT"
+    fig = "2c"
     if loop>0:
         type="Mutant"
+        fig="2d"
     y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
     sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
     t = sol.t
@@ -234,12 +246,13 @@ for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
               "[Substrate]", "[BcrAbl_Substrate]","[Phospho_Substrate]"]
     y2Labels=["Proportion Active BcrAbl"]
     drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Time evolution of All Model Components %s"%type, use_log_scale)
+    drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Figure %s: Time evolution of All Model Components %s (logarithmic)"%(fig, type), use_log_scale, fname="fig_%s_%s.png"%(fig, timestamp))
     loop+=1
 
 # ======================================================================
 # GRAPH 3 #
-# 1 Graph displaying only the wt vs mutant substrate-phospho rate
-# (pls call this Active Substrate in the Graph) and the
+# 2 Graphs displaying (a) the wt vs mutant substrate-phospho rate
+# (pls call this Active Substrate in the Graph) and (b) the
 # bcr-abl-imantinib bound rate of the Model
 # Title: Development of Relevant Components
 # ======================================================================
@@ -259,7 +272,7 @@ for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
     y1Values.append(BcrAbl_Imatinib)
     y1Labels.append("%s Bound to Imatinib"%type)
     loop+=1
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Time Evolution of Bound Imatinib Concentration", use_log_scale)
+drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Figure 3a: Time Evolution of Bound Imatinib Concentration", use_log_scale, fname="fig_3a_%s.png"%timestamp)
 
 loop=0
 y1Values, y1Labels, y2Values, y2Labels = ([], [], [], [])
@@ -275,7 +288,7 @@ for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
     y1Values.append(Phospho_Substrate)
     y1Labels.append("%s Active Substrate"%type)
     loop+=1
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Time Evolution of Substrate Concentration", use_log_scale)
+drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Figure 3b: Time Evolution of Substrate Concentration", use_log_scale, fname="fig_3b_%s.png"%timestamp)
 
 
 # ======================================================================
@@ -297,7 +310,7 @@ for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
     y1Values.append(BcrAbl_Imatinib*k_deg)
 
 y1Labels=["Wild", "Mutant"]
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Apoptosis Rate", False)
+drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Figure 4: Apoptosis Rate, WT and Mutant", False, fname="fig_4_%s.png"%timestamp)
 
 
 # ======================================================================
@@ -335,10 +348,14 @@ for Imatinib_0 in [1e-6, 2e-6, 3e-6, 4e-6, 5e-6]:
 #        y2Values.append(BcrAbl_active/(BcrAbl_active+BcrAbl_inactive))
 #        y2Labels.append("Mutant BcrAbl, proportion [BcrAbl_active]")
 
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "[BcrAbl_Imatinib] by Dosage, Time Dependemcy", False, "upper right")
+drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Figure 5: [BcrAbl_Imatinib] by Dosage, Time Dependemcy", False, "upper right", fname="fig_5_%s.png"%timestamp)
 
-plt.show()
 
+
+# plt.show()
+plt.show(block=False)
+plt.pause(5)
+plt.close()
 
 
 '''
