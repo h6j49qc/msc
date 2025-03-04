@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 import matplotlib.ticker as mticker
 from datetime import datetime
+from pathlib import Path
+from fileinput import filename
 
 # Define reaction rate constants (assumed reasonable values)
 k_on1 = 1e2  # ATP binding rate (M⁻¹s⁻¹)
@@ -34,12 +36,12 @@ Substrate_0 = 1.3e-6  # 10 μM
 BcrAbl_Substrate_0 = 0  # No bound substrate at start
 Phospho_Substrate_0 = 0  # Initially no phosphorylated substrate
 
-filepath="results_new3/"  # path to save graphics files to, relative to working directory
 filepath=""               # path to save graphics files to, relative to working directory
-graphs_to_do=[0,1,0,0,0]  # which graphs to generate, 1-5
+filepath="results_new/"   # path to save graphics files to, relative to working directory
 graphs_to_do=[1,1,1,1,1]  # which graphs to generate, 1-5
-seconds_to_show_plots=1   # duration to keep plots open; 0=indefinitely
-t_end=80                  # total time to be simulated (s)
+seconds_to_show_plots=10   # duration to keep plots open; 0=indefinitely
+t_end=80                 # total time to be simulated (s)
+debug=0
 
 # Define ODE system
 def bcr_abl_kinetics(t, y):
@@ -48,20 +50,25 @@ def bcr_abl_kinetics(t, y):
     global iter
     BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = y
 
-    dBcrAbl_active = k_plus1 * BcrAbl_inactive - k_minus1 * BcrAbl_active - k_on1 * ATP_0 * BcrAbl_active + k_off1 * BcrAbl_ATP
-    dBcrAbl_inactive = k_minus1 * BcrAbl_active - k_plus1 * BcrAbl_inactive - k_on3 * BcrAbl_inactive * Imatinib + k_off3 * BcrAbl_Imatinib + k_prod1
+    dk_plus1  = k_plus1  * BcrAbl_inactive
+    dk_minus1 = k_minus1 * BcrAbl_active
+    dk_deg    = k_deg    * BcrAbl_Imatinib
+    dk_cat    = k_cat    * BcrAbl_Substrate
+    dk_on1    = k_on1    * BcrAbl_active   * ATP_0
+    dk_on2    = k_on2    * Substrate       * BcrAbl_ATP
+    dk_on3    = k_on3    * BcrAbl_inactive * Imatinib
+    dk_off1   = k_off1   * BcrAbl_ATP
+    dk_off2   = k_off2   * BcrAbl_Substrate
+    dk_off3   = k_off3   * BcrAbl_Imatinib
 
-    dBcrAbl_ATP = k_on1 * BcrAbl_active * ATP_0 - k_off1 * BcrAbl_ATP + k_off2 * BcrAbl_Substrate - k_on2 * Substrate * BcrAbl_ATP
-
-    dImatinib = Kintake - k_on3 * Imatinib * BcrAbl_inactive + k_off3 * BcrAbl_Imatinib
-    dBcrAbl_Imatinib = k_on3 * BcrAbl_inactive * Imatinib - k_off3 * BcrAbl_Imatinib - k_deg * BcrAbl_Imatinib
-
-    dSubstrate = k_off2 * BcrAbl_Substrate - k_on2 * Substrate * BcrAbl_ATP
-    # try treating this as a constant as we have no replenishment process
-    # dSubstrate = 0
-
-    dBcrAbl_Substrate = k_on2 * Substrate * BcrAbl_ATP - k_off2 * BcrAbl_Substrate - k_cat * BcrAbl_Substrate
-    dPhospho_Substrate = k_cat * BcrAbl_Substrate
+    dBcrAbl_active     = dk_plus1  + dk_off1 - dk_on1  - dk_minus1
+    dBcrAbl_inactive   = dk_minus1 + dk_off3 + k_prod1 - dk_plus1 - dk_on3
+    dBcrAbl_ATP        = dk_on1    + dk_off2 - dk_off1 - dk_on2
+    dImatinib          = Kintake   + dk_off3 - dk_on3
+    dBcrAbl_Imatinib   = dk_on3    - dk_off3 - dk_deg
+    dSubstrate         = dk_off2   - dk_on2
+    dBcrAbl_Substrate  = dk_on2    - dk_off2 - dk_cat
+    dPhospho_Substrate = dk_cat
 
     if debug>0:
         if (iter%10==0):
@@ -77,11 +84,30 @@ def bcr_abl_kinetics(t, y):
 
 def drawPlot(xValues, y1Values, y1Labels, y2Values, y2Labels, title, y1LogScale=False, y1LegendPosition="lower center", fname=""):
 
+    if debug!=0:
+        line="Time     "
+        for l in y1Labels:
+            line += l+"   ";
+        for l in y2Labels:
+            line += l+"   ";
+        print(line)
+        i=0
+        for x in xValues:
+            line = str(xValues[i])+"      "
+            for y in y1Values:
+                line += str(y[i])+"      "
+            for y in y2Values:
+                line += str(y[i])+"      "
+            i+=1
+            print(line)
     # determine minima and maxima for scaling
-    minY1, maxY1, minY2, maxY2 = 1e20, 0.0, 1e20, 0.0
+    minY1, maxY1, minY2, maxY2 = 1e20, 1E-20, 1e20, 1E-20
     for y1 in y1Values:
         if y1LogScale:
-            minY1=min(minY1, min(x for x in y1 if x > 0))
+            if y1.max()<=0:
+                minY1=1E-22
+            else:
+                minY1=min(minY1, min(x for x in y1 if x > 0))
         else:
             minY1=min(minY1, y1.min())
             minY1=0
@@ -141,16 +167,19 @@ algorithms=["RK45","RK23","DOP853","Radau","BDF","LSODA"]
 algo=5
 
 # Get current date and time
-timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+timestamp = datetime.now().strftime("%m-%d_%H-%M-%S")
 
 # a few global variables
 iter=0
 use_log_scale=False
-debug=0
 
 # Time span for simulation (0 to 100s)
 t_span = (0, t_end)
 t_eval = np.linspace(0, t_end, 500)
+
+if len(filepath)>0:
+    dir_path = Path(filepath)
+    dir_path.mkdir(parents=False, exist_ok=True)
 
 # ======================================================================
 # GRAPH 1 #
@@ -359,6 +388,23 @@ if (graphs_to_do[4]!=0):
     drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Figure 5: [BcrAbl_Imatinib] by Dosage, Time Dependemcy", False, "upper right", fname="%sfig_5_%s.png"%(filepath, timestamp))
 
 
+fig, ax = plt.subplots()
+ax.set_xlim(0, 10)
+ax.set_ylim(0, 10)
+
+ax.text(0.5, 9.0, 'Parameters Used', fontsize=10, ha='center', va='top')
+ax.text(0.5, 8.0, 'Model Parameters', fontsize=8, ha='left', va='top')
+ax.text(0.5, 7.5,f"k_on1={k_on1}   k_off1={k_off1}   k_on3= {k_on3}   k_off3={k_off3}   k_cat={k_cat}", fontsize=5, ha='left', va='center')
+ax.text(0.5, 7.0,f"k_plus1={k_plus1}   k_minus1={k_minus1}   Kintake={Kintake}", fontsize=5, ha='left', va='center')
+ax.text(0.5, 6.5,f"k_on2={k_on2}   k_off2={k_off2}   k_prod1={k_prod1}   k_deg={k_deg}", fontsize=5, ha='left', va='center')
+ax.text(0.5, 6.0, 'Start Values', fontsize=8, ha='left', va='top')
+ax.text(0.5, 5.5,f"BcrAbl_active_0={BcrAbl_active_0}   BcrAbl_inactive_0={BcrAbl_inactive_0}   ATP_0={ATP_0}   BcrAbl_ATP_0={BcrAbl_ATP_0}   Imatinib_0={Imatinib_0}", fontsize=5, ha='left', va='center')
+ax.text(0.5, 5.0,f"BcrAbl_Imatinib_0={BcrAbl_Imatinib_0}   Substrate_0={Substrate_0}   BcrAbl_Substrate_0={BcrAbl_Substrate_0}   Phospho_Substrate_0={Phospho_Substrate_0}", fontsize=5, ha='left', va='center')
+ax.text(0.5, 4.5, 'Technical Parameters', fontsize=8, ha='left', va='top')
+ax.text(0.5, 4.0,f"filepath={filepath}   graphs_to_do={graphs_to_do}   seconds_to_show_plot={seconds_to_show_plots}   t_end={t_end}   debug={debug}", fontsize=5, ha='left', va='center')
+ax.set_axis_off()
+fig.savefig("%sparams_%s.png"%(filepath, timestamp), format="png", dpi=300)  # dpi=300 for higher quality
+
 if (seconds_to_show_plots==0):
     plt.show()
 else:
@@ -367,134 +413,3 @@ else:
 plt.close()
 
 
-'''
-# some old code archived here
-use_new_params=False
-if use_new_params:
-    k_on1 = 5000  # ATP binding rate (M⁻¹s⁻¹)
-    k_off1 = 0.25  # ATP unbinding rate (s⁻¹)
-    k_on3 = 0.36e6  # Imatinib binding rate (M⁻¹s⁻¹)
-    k_off3 = 0.1  # Imatinib unbinding rate (s⁻¹)
-    k_cat = 0.71  # Catalytic phosphorylation rate (s⁻¹)
-
-
-y1Values, y1Labels, y2Values, y2Labels = ([], [], [], [])
-k_minus1=0.014  # Inactivation rate of BCR-ABL (s⁻¹)
-iter = 0
-y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
-t = sol.t
-BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
-y1Values.append(BcrAbl_inactive)
-y1Values.append(Phospho_Substrate)
-y1Values.append(BcrAbl_Imatinib)
-y1Labels=["Mutant BcrAbl_inactive", "Mutant Phospho", "Mutant Bound"]
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Title1", use_log_scale)
-
-
-k_plus1 = 0.1  # Activation rate of BCR-ABL (s⁻¹)
-k_minus1 = 0.0851  # Inactivation rate of BCR-ABL (s⁻¹)
-Imatinib_0 = 1e-6  # 1 μM
-iter = 0
-y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
-t = sol.t
-BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
-y1Values.append(BcrAbl_Imatinib)
-y1Labels.append("Wild BcrAbl (Imatinib = %iμM)" % (Imatinib_0*1e6))
-y2Values.append(BcrAbl_active / (BcrAbl_active + BcrAbl_inactive))
-y2Labels.append("Wild BcrAbl, proportion [BcrAbl_active]")
-
-k_plus1 = 0.1  # Activation rate of BCR-ABL (s⁻¹)
-k_minus1 = 0.014  # Inactivation rate of BCR-ABL (s⁻¹)
-
-for Imatinib_0 in [1e-6, 2e-6, 3e-6, 4e-6, 5e-6]:
-    iter = 0
-    y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
-    BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
-    y1Values.append(BcrAbl_Imatinib)
-    y1Labels.append("Mutant BcrAbl (Imatinib = %iμM)" % (Imatinib_0*1e6))
-    if len(y2Values)<2:
-        y2Values.append(BcrAbl_active/(BcrAbl_active+BcrAbl_inactive))
-        y2Labels.append("Mutant BcrAbl, proportion [BcrAbl_active]")
-
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "[BcrAbl_Imatinib] by Dosage, Time Dependemcy", True)
-
-
-
-
-k_on1 = 5000  # ATP binding rate (M⁻¹s⁻¹)
-y1Values, y1Labels, y2Values, y2Labels = ([], [], [], [])
-for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
-    iter = 0
-    y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
-    t = sol.t
-    BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
-    y1Values.append(Phospho_Substrate)
-    y1Values.append(BcrAbl_Imatinib)
-y1Labels=["Wild Phospho", "Wild Bound", "Mutant Phospho", "Mutant Bound"]
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Title2 k_on1 = 5000", use_log_scale)
-
-k_off1 = 0.25  # ATP unbinding rate (s⁻¹)
-y1Values, y1Labels, y2Values, y2Labels = ([], [], [], [])
-for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
-    iter = 0
-    y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
-    t = sol.t
-    BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
-    y1Values.append(Phospho_Substrate)
-    y1Values.append(BcrAbl_Imatinib)
-y1Labels=["Wild Phospho", "Wild Bound", "Mutant Phospho", "Mutant Bound"]
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Title3 k_off1 = 0.25", use_log_scale)
-
-k_on3 = 0.36e6  # Imatinib binding rate (M⁻¹s⁻¹)
-y1Values, y1Labels, y2Values, y2Labels = ([], [], [], [])
-for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
-    iter = 0
-    y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
-    t = sol.t
-    BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
-    y1Values.append(Phospho_Substrate)
-    y1Values.append(BcrAbl_Imatinib)
-y1Labels=["Wild Phospho", "Wild Bound", "Mutant Phospho", "Mutant Bound"]
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Title4 k_on3 = 0.36e6", use_log_scale)
-
-k_off3 = 0.1  # Imatinib unbinding rate (s⁻¹)
-y1Values, y1Labels, y2Values, y2Labels = ([], [], [], [])
-for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
-    iter = 0
-    y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
-    t = sol.t
-    BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
-    y1Values.append(Phospho_Substrate)
-    y1Values.append(BcrAbl_Imatinib)
-y1Labels=["Wild Phospho", "Wild Bound", "Mutant Phospho", "Mutant Bound"]
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Title5 k_off3 = 0.1", use_log_scale)
-
-k_cat = 0.71  # Catalytic phosphorylation rate (s⁻¹)
-y1Values, y1Labels, y2Values, y2Labels = ([], [], [], [])
-for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
-    iter = 0
-    y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
-    t = sol.t
-    BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
-    y1Values.append(Phospho_Substrate)
-    y1Values.append(BcrAbl_Imatinib)
-y1Labels=["Wild Phospho", "Wild Bound", "Mutant Phospho", "Mutant Bound"]
-drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Title6 k_cat = 0.71", use_log_scale)
-
-
-
-# these were old lines with errors from odes
-#    dBcrAbl_inactive = k_minus1 * BcrAbl_active - k_plus1 * BcrAbl_inactive - k_on3 * BcrAbl_inactive * Imatinib + k_prod1
-#    dBcrAbl_ATP = k_on1 * BcrAbl_active * ATP_0 - k_off1 * BcrAbl_ATP + k_off2 * BcrAbl_Substrate
-#    dSubstrate = k_off2 * BcrAbl_Substrate - k_on2 * Substrate * dBcrAbl_ATP
-#    dBcrAbl_Substrate = k_on2 * Substrate * dBcrAbl_ATP - k_off2 * BcrAbl_Substrate - k_cat * BcrAbl_Substrate
-
-'''
