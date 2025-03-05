@@ -4,6 +4,9 @@ from scipy.integrate import solve_ivp
 import matplotlib.ticker as mticker
 from datetime import datetime
 from pathlib import Path
+from PIL import Image
+import os
+import glob
 
 # Define reaction rate constants (assumed reasonable values)
 k_on1 = 1e2  # ATP binding rate (M⁻¹s⁻¹)
@@ -37,8 +40,9 @@ Phospho_Substrate_0 = 0  # Initially no phosphorylated substrate
 
 # Technical Parameters
 filepath="results/"         # path to save graphics files to, relative to working directory, must end with / unless empty (working directory)
+clean_directory=False        # delete all .png files in directory
 graphs_to_do=[1,1,1,1,1,1]  # which graphs to generate, 1-6 (6 is start parameters as text)
-seconds_to_show_plots=1     # duration to keep plots open; 0=indefinitely
+seconds_to_show_plots=-1    # duration to keep plots open; 0=indefinitely, negative=do not show (show only conglomorate)
 t_end=80                    # total time to be simulated (s)
 debug=0
 min_steps=2000
@@ -180,6 +184,11 @@ t_eval = np.linspace(0, t_end, 500)
 if len(filepath)>0:
     dir_path = Path(filepath)
     dir_path.mkdir(parents=False, exist_ok=True)
+    # Delete existing files if requested
+    if clean_directory:
+        png_files = glob.glob(f"{filepath}*.png")
+        for file in png_files:
+            os.remove(file)
 
 # ======================================================================
 # GRAPH 1 #
@@ -413,15 +422,13 @@ if (graphs_to_do[5]!=0):
 
 if (seconds_to_show_plots==0):
     plt.show()
-else:
+elif seconds_to_show_plots>0:
     plt.show(block=False)
     plt.pause(seconds_to_show_plots)
 plt.close()
 
-from PIL import Image
-import glob
 
-if all(graphs_to_do[:6]):
+if any(graphs_to_do) & (len(filepath)>0):
     # Load all PNG images from the directory
     image_files = sorted(glob.glob(filepath+"*.png"))  # Adjust path if needed
     image_files = image_files[:11]  # Ensure we only take 12 images
