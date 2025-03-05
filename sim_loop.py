@@ -411,12 +411,9 @@ if (graphs_to_do[5]!=0):
     ax.set_axis_off()
     fig.savefig("%sparams_%s.png"%(filepath, timestamp), format="png", dpi=300)  # dpi=300 for higher quality
 
-
 if (seconds_to_show_plots==0):
     plt.show()
 else:
     plt.show(block=False)
     plt.pause(seconds_to_show_plots)
 plt.close()
-
-
