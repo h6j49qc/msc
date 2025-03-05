@@ -36,12 +36,12 @@ BcrAbl_Substrate_0 = 0  # No bound substrate at start
 Phospho_Substrate_0 = 0  # Initially no phosphorylated substrate
 
 # Technical Parameters
-filepath=""                 # path to save graphics files to, relative to working directory
-filepath="results_new1/"    # path to save graphics files to, relative to working directory, must end with /
+filepath="results/"         # path to save graphics files to, relative to working directory, must end with / unless empty (working directory)
 graphs_to_do=[1,1,1,1,1,1]  # which graphs to generate, 1-6 (6 is start parameters as text)
-seconds_to_show_plots=10    # duration to keep plots open; 0=indefinitely
+seconds_to_show_plots=1     # duration to keep plots open; 0=indefinitely
 t_end=80                    # total time to be simulated (s)
 debug=0
+min_steps=2000
 
 # Define ODE system
 def bcr_abl_kinetics(t, y):
@@ -192,7 +192,7 @@ if (graphs_to_do[0]!=0):
     k_minus1=0.0851
     iter = 0
     y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
+    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / min_steps)
     t = sol.t
     BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
     y2Values.append(BcrAbl_active / (BcrAbl_active + BcrAbl_inactive))
@@ -206,7 +206,7 @@ if (graphs_to_do[0]!=0):
     k_minus1= 0.014
     iter = 0
     y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
+    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / min_steps)
     t = sol.t
     BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
     y2Values.append(BcrAbl_active / (BcrAbl_active + BcrAbl_inactive))
@@ -234,7 +234,7 @@ if (graphs_to_do[1]!=0):
             type="Mutant"
             fig="2b"
         y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-        sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
+        sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / min_steps)
         t = sol.t
         BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
         y2Values.append(BcrAbl_active/(BcrAbl_active+BcrAbl_inactive))
@@ -264,7 +264,7 @@ if (graphs_to_do[1]!=0):
             type="Mutant"
             fig="2d"
         y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-        sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
+        sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / min_steps)
         t = sol.t
         BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
         y2Values.append(BcrAbl_active/(BcrAbl_active+BcrAbl_inactive))
@@ -301,7 +301,7 @@ if (graphs_to_do[2]!=0):
         if loop>0:
             type="Mutant"
         y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-        sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
+        sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / min_steps)
         t = sol.t
         BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
         y1Values.append(BcrAbl_Imatinib)
@@ -317,7 +317,7 @@ if (graphs_to_do[2]!=0):
         if loop>0:
             type="Mutant"
         y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-        sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
+        sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / min_steps)
         t = sol.t
         BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
         y1Values.append(Phospho_Substrate)
@@ -340,7 +340,7 @@ if (graphs_to_do[3]!=0):
     for k_minus1 in (0.0851, 0.014):  # Inactivation rate of BCR-ABL (s⁻¹)
         iter = 0
         y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-        sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
+        sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / min_steps)
         t = sol.t
         BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
         y1Values.append(BcrAbl_Imatinib*k_deg)
@@ -363,7 +363,7 @@ if (graphs_to_do[4]!=0):
     Imatinib_0 = 1e-6  # 1 μM
     iter = 0
     y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
+    sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / min_steps)
     t = sol.t
     BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
     y1Values.append(BcrAbl_Imatinib)
@@ -375,7 +375,7 @@ if (graphs_to_do[4]!=0):
     for Imatinib_0 in [1e-6, 2e-6, 3e-6, 4e-6, 5e-6]:
         iter = 0
         y0 = [BcrAbl_active_0, BcrAbl_inactive_0, BcrAbl_ATP_0, Imatinib_0, BcrAbl_Imatinib_0, Substrate_0, BcrAbl_Substrate_0, Phospho_Substrate_0]
-        sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / 2000)
+        sol = solve_ivp(bcr_abl_kinetics, t_span, y0, t_eval=t_eval, dense_output=True, method=algorithms[algo], max_step=t_end / min_steps)
         BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
         y1Values.append(BcrAbl_Imatinib)
         y1Labels.append("Mutant BcrAbl (Imatinib = %iμM)" % (Imatinib_0*1e6))
@@ -383,7 +383,7 @@ if (graphs_to_do[4]!=0):
     drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Figure 5: [BcrAbl_Imatinib] by Dosage, Time Dependemcy", False, "upper right", fname="%sfig_5_%s.png"%(filepath, timestamp))
 
 if (graphs_to_do[5]!=0):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 6))
     ax.set_xlim(0, 10)
     ax.set_ylim(0, 10)
 #    ax.text(0.5, 9.0, 'Parameters Used', fontsize=10, ha='center', va='top')
@@ -395,7 +395,7 @@ if (graphs_to_do[5]!=0):
     ax.text(0.5, 6.9,f"BcrAbl_active_0={BcrAbl_active_0}   BcrAbl_inactive_0={BcrAbl_inactive_0}   ATP_0={ATP_0}   BcrAbl_ATP_0={BcrAbl_ATP_0}   Imatinib_0={Imatinib_0}", fontsize=5, ha='left', va='center')
     ax.text(0.5, 6.6,f"BcrAbl_Imatinib_0={BcrAbl_Imatinib_0}   Substrate_0={Substrate_0}   BcrAbl_Substrate_0={BcrAbl_Substrate_0}   Phospho_Substrate_0={Phospho_Substrate_0}", fontsize=5, ha='left', va='center')
     ax.text(0.5, 6.1, 'Technical Parameters', fontsize=8, ha='left', va='top')
-    ax.text(0.5, 5.6,f"filepath={filepath}   graphs_to_do={graphs_to_do}   seconds_to_show_plot={seconds_to_show_plots}   t_end={t_end}   debug={debug}", fontsize=5, ha='left', va='center')
+    ax.text(0.5, 5.6,f"filepath={filepath}   graphs_to_do={graphs_to_do}   seconds_to_show_plot={seconds_to_show_plots}   t_end={t_end}   debug={debug}    min_steps={min_steps}", fontsize=5, ha='left', va='center')
     all_str=""
     line = 1
     for name, val in list(globals().items()):
@@ -417,3 +417,33 @@ else:
     plt.show(block=False)
     plt.pause(seconds_to_show_plots)
 plt.close()
+
+from PIL import Image
+import glob
+
+if all(graphs_to_do[:6]):
+    # Load all PNG images from the directory
+    image_files = sorted(glob.glob(filepath+"*.png"))  # Adjust path if needed
+    image_files = image_files[:11]  # Ensure we only take 12 images
+
+    # Open images and get their size
+    images = [Image.open(img) for img in image_files]
+    img_width, img_height = images[0].size  # Assume all images are the same size
+
+    # Define grid size
+    cols, rows = 4, 3
+    grid_width = img_width * cols
+    grid_height = img_height * rows
+
+    # Create a blank canvas for the final image
+    merged_image = Image.new("RGB", (grid_width, grid_height))
+
+    # Paste each image into the correct position
+    for index, img in enumerate(images):
+        x_offset = (index % cols) * img_width
+        y_offset = (index // cols) * img_height
+        merged_image.paste(img, (x_offset, y_offset))
+
+    # Save or display the merged image
+    merged_image.save(filepath+"merged_grid.png")
+    merged_image.show()
