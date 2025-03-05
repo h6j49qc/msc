@@ -4,7 +4,6 @@ from scipy.integrate import solve_ivp
 import matplotlib.ticker as mticker
 from datetime import datetime
 from pathlib import Path
-from fileinput import filename
 
 # Define reaction rate constants (assumed reasonable values)
 k_on1 = 1e2  # ATP binding rate (M⁻¹s⁻¹)
@@ -36,11 +35,12 @@ Substrate_0 = 1.3e-6  # 10 μM
 BcrAbl_Substrate_0 = 0  # No bound substrate at start
 Phospho_Substrate_0 = 0  # Initially no phosphorylated substrate
 
-filepath=""               # path to save graphics files to, relative to working directory
-filepath="results_new/"   # path to save graphics files to, relative to working directory
-graphs_to_do=[1,1,1,1,1]  # which graphs to generate, 1-5
-seconds_to_show_plots=10   # duration to keep plots open; 0=indefinitely
-t_end=80                 # total time to be simulated (s)
+# Technical Parameters
+filepath=""                 # path to save graphics files to, relative to working directory
+filepath="results_new1/"    # path to save graphics files to, relative to working directory, must end with /
+graphs_to_do=[1,1,1,1,1,1]  # which graphs to generate, 1-6 (6 is start parameters as text)
+seconds_to_show_plots=10    # duration to keep plots open; 0=indefinitely
+t_end=80                    # total time to be simulated (s)
 debug=0
 
 # Define ODE system
@@ -55,7 +55,7 @@ def bcr_abl_kinetics(t, y):
     dk_deg    = k_deg    * BcrAbl_Imatinib
     dk_cat    = k_cat    * BcrAbl_Substrate
     dk_on1    = k_on1    * BcrAbl_active   * ATP_0
-    dk_on2    = k_on2    * Substrate       * BcrAbl_ATP
+    dk_on2    = k_on2    * BcrAbl_ATP      * Substrate
     dk_on3    = k_on3    * BcrAbl_inactive * Imatinib
     dk_off1   = k_off1   * BcrAbl_ATP
     dk_off2   = k_off2   * BcrAbl_Substrate
@@ -368,8 +368,6 @@ if (graphs_to_do[4]!=0):
     BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
     y1Values.append(BcrAbl_Imatinib)
     y1Labels.append("Wild BcrAbl (Imatinib = %iμM)" % (Imatinib_0*1e6))
-    #y2Values.append(BcrAbl_active / (BcrAbl_active + BcrAbl_inactive))
-    #y2Labels.append("Wild BcrAbl, proportion [BcrAbl_active]")
 
     k_plus1 = 0.1  # Activation rate of BCR-ABL (s⁻¹)
     k_minus1 = 0.014  # Inactivation rate of BCR-ABL (s⁻¹)
@@ -381,29 +379,38 @@ if (graphs_to_do[4]!=0):
         BcrAbl_active, BcrAbl_inactive, BcrAbl_ATP, Imatinib, BcrAbl_Imatinib, Substrate, BcrAbl_Substrate, Phospho_Substrate = sol.y
         y1Values.append(BcrAbl_Imatinib)
         y1Labels.append("Mutant BcrAbl (Imatinib = %iμM)" % (Imatinib_0*1e6))
-    #    if len(y2Values)<2:
-    #        y2Values.append(BcrAbl_active/(BcrAbl_active+BcrAbl_inactive))
-    #        y2Labels.append("Mutant BcrAbl, proportion [BcrAbl_active]")
 
     drawPlot(t, y1Values, y1Labels, y2Values, y2Labels, "Figure 5: [BcrAbl_Imatinib] by Dosage, Time Dependemcy", False, "upper right", fname="%sfig_5_%s.png"%(filepath, timestamp))
 
+if (graphs_to_do[5]!=0):
+    fig, ax = plt.subplots()
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 10)
+#    ax.text(0.5, 9.0, 'Parameters Used', fontsize=10, ha='center', va='top')
+    ax.text(0.5, 9.0, 'Model Parameters', fontsize=8, ha='left', va='top')
+    ax.text(0.5, 8.5,f"k_on1={k_on1}   k_off1={k_off1}   k_on3= {k_on3}   k_off3={k_off3}   k_cat={k_cat}", fontsize=5, ha='left', va='center')
+    ax.text(0.5, 8.2,f"k_plus1={k_plus1}   k_minus1={k_minus1}   Kintake={Kintake}", fontsize=5, ha='left', va='center')
+    ax.text(0.5, 7.9,f"k_on2={k_on2}   k_off2={k_off2}   k_prod1={k_prod1}   k_deg={k_deg}", fontsize=5, ha='left', va='center')
+    ax.text(0.5, 7.4, 'Start Values', fontsize=8, ha='left', va='top')
+    ax.text(0.5, 6.9,f"BcrAbl_active_0={BcrAbl_active_0}   BcrAbl_inactive_0={BcrAbl_inactive_0}   ATP_0={ATP_0}   BcrAbl_ATP_0={BcrAbl_ATP_0}   Imatinib_0={Imatinib_0}", fontsize=5, ha='left', va='center')
+    ax.text(0.5, 6.6,f"BcrAbl_Imatinib_0={BcrAbl_Imatinib_0}   Substrate_0={Substrate_0}   BcrAbl_Substrate_0={BcrAbl_Substrate_0}   Phospho_Substrate_0={Phospho_Substrate_0}", fontsize=5, ha='left', va='center')
+    ax.text(0.5, 6.1, 'Technical Parameters', fontsize=8, ha='left', va='top')
+    ax.text(0.5, 5.6,f"filepath={filepath}   graphs_to_do={graphs_to_do}   seconds_to_show_plot={seconds_to_show_plots}   t_end={t_end}   debug={debug}", fontsize=5, ha='left', va='center')
+    all_str=""
+    line = 1
+    for name, val in list(globals().items()):
+        str=f"{name}={val}"
+        if len(str)<100:
+            all_str+=f"{str}    "
+            if len(all_str)/120>line:
+                line+=1
+                all_str+="\n"
+    ax.text(0.5, 5.1, 'All Values', fontsize=8, ha='left', va='top')
+    ax.text(0.5, 3.0, all_str, fontsize=4, ha='left', va='center')
+    print(all_str)
+    ax.set_axis_off()
+    fig.savefig("%sparams_%s.png"%(filepath, timestamp), format="png", dpi=300)  # dpi=300 for higher quality
 
-fig, ax = plt.subplots()
-ax.set_xlim(0, 10)
-ax.set_ylim(0, 10)
-
-ax.text(0.5, 9.0, 'Parameters Used', fontsize=10, ha='center', va='top')
-ax.text(0.5, 8.0, 'Model Parameters', fontsize=8, ha='left', va='top')
-ax.text(0.5, 7.5,f"k_on1={k_on1}   k_off1={k_off1}   k_on3= {k_on3}   k_off3={k_off3}   k_cat={k_cat}", fontsize=5, ha='left', va='center')
-ax.text(0.5, 7.0,f"k_plus1={k_plus1}   k_minus1={k_minus1}   Kintake={Kintake}", fontsize=5, ha='left', va='center')
-ax.text(0.5, 6.5,f"k_on2={k_on2}   k_off2={k_off2}   k_prod1={k_prod1}   k_deg={k_deg}", fontsize=5, ha='left', va='center')
-ax.text(0.5, 6.0, 'Start Values', fontsize=8, ha='left', va='top')
-ax.text(0.5, 5.5,f"BcrAbl_active_0={BcrAbl_active_0}   BcrAbl_inactive_0={BcrAbl_inactive_0}   ATP_0={ATP_0}   BcrAbl_ATP_0={BcrAbl_ATP_0}   Imatinib_0={Imatinib_0}", fontsize=5, ha='left', va='center')
-ax.text(0.5, 5.0,f"BcrAbl_Imatinib_0={BcrAbl_Imatinib_0}   Substrate_0={Substrate_0}   BcrAbl_Substrate_0={BcrAbl_Substrate_0}   Phospho_Substrate_0={Phospho_Substrate_0}", fontsize=5, ha='left', va='center')
-ax.text(0.5, 4.5, 'Technical Parameters', fontsize=8, ha='left', va='top')
-ax.text(0.5, 4.0,f"filepath={filepath}   graphs_to_do={graphs_to_do}   seconds_to_show_plot={seconds_to_show_plots}   t_end={t_end}   debug={debug}", fontsize=5, ha='left', va='center')
-ax.set_axis_off()
-fig.savefig("%sparams_%s.png"%(filepath, timestamp), format="png", dpi=300)  # dpi=300 for higher quality
 
 if (seconds_to_show_plots==0):
     plt.show()
