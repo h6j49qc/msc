@@ -38,6 +38,45 @@ BcrAbl_Substrate_0 = 0  # No bound substrate at start
 Phospho_Substrate_0 = 0  # Initially no phosphorylated substrate
 
 
+
+# new parameters
+
+# Define reaction rate constants (assumed reasonable values)
+# wild type; equilibrium 54% Active
+k_plus1 = 0.1  # Activation rate of BCR-ABL (s⁻¹)
+#k_minus1 = 0.0851  # Inactivation rate of BCR-ABL (s⁻¹)
+
+# Mutant type, equilibrium >54%
+k_plus1 = 0.1  # Activation rate of BCR-ABL (s⁻¹)
+k_minus1 = 0.014  # Inactivation rate of BCR-ABL (s⁻¹)
+
+k_on1 = 5000  # ATP binding rate (M⁻¹s⁻¹)
+k_off1 = 0.25  # ATP unbinding rate (s⁻¹)
+k_on3 = 0.36e6  # Imatinib binding rate (M⁻¹s⁻¹)
+k_off3 = 0.1  # Imatinib unbinding rate (s⁻¹)
+Kintake = 3e-8 # Imatinib intake Ms⁻¹ (dosage 600mg or approx. 1.2 millimole daily)
+
+k_on2 = 1.0e6  # Substrate binding rate (M⁻¹s⁻¹)
+k_off2 = 0.1  # Substrate unbinding rate (s⁻¹)
+k_cat = 0.71  # Catalytic phosphorylation rate (s⁻¹)
+k_prod1 = 1e-8
+k_deg = 0.1
+
+# Initial concentrations (M)
+BcrAbl_active_0 = 5e-6  # 5 μM
+BcrAbl_inactive_0 = 2e-6  # 2 μM
+ATP_0 = 1.1e-3  # 1 mM (intracellular ATP concentration)
+BcrAbl_ATP_0 = 0  # No bound ATP at start
+Imatinib_0 = 1e-6  # 1 μM
+BcrAbl_Imatinib_0 = 0  # No Imatinib-bound BCR-ABL at start
+
+Substrate_0 = 1e-6  # 10 μM
+BcrAbl_Substrate_0 = 0  # No bound substrate at start
+Phospho_Substrate_0 = 0  # Initially no phosphorylated substrate
+
+
+
+
 # Define ODE system
 def bcr_abl_kinetics(t, y):
 
@@ -109,12 +148,12 @@ def drawPlot(sol, use_log_scale, txt):
     ax1.set_ylabel("Concentration (M)")
     ax1.plot(t, BcrAbl_active, label="[Bcr-Abl (Active)]", color="red")
     ax1.plot(t, BcrAbl_inactive, label="[Bcr-Abl (Inactive)]", color="blue")
-#    ax1.plot(t, BcrAbl_ATP, label="dBcrAbl_ATP")
+    ax1.plot(t, BcrAbl_ATP, label="dBcrAbl_ATP")
     ax1.plot(t, Imatinib, label="Imatinib")
     ax1.plot(t, BcrAbl_Imatinib, label="BcrAbl_Imatinib")
-#    ax1.plot(t, Substrate, label="Substrate")
-#    ax1.plot(t, BcrAbl_Substrate, label="BcrAbl_Substrate")
-#    ax1.plot(t, Phospho_Substrate, label="Phospho_Substrate")
+    ax1.plot(t, Substrate, label="Substrate")
+    ax1.plot(t, BcrAbl_Substrate, label="BcrAbl_Substrate")
+    ax1.plot(t, Phospho_Substrate, label="Phospho_Substrate")
     ax1.legend(loc='lower center')
 
     # 2nd y-axis and curves
